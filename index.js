@@ -6,7 +6,7 @@ const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildVoiceStates, // Ses kanallarına erişim izni
+        GatewayIntentBits.GuildVoiceStates,
         GatewayIntentBits.MessageContent
     ]
 });
@@ -15,7 +15,7 @@ const client = new Client({
 const bakiye = new Map();
 const günlükCooldown = new Set();
 
-// Sadece Whitelist'teki kişiler sınırsız para basabilir
+// Whitelist VIP kullanıcılar
 const whitelist = new Set(['1053561056649297960']);
 
 // Slot Emojileri (Patlıcan, Kanada Bayrağı, Kiraz)
@@ -29,10 +29,8 @@ app.listen(process.env.PORT || 3000);
 client.on('ready', () => {
     console.log(`${client.user.tag} Kanada Ekonomi ve Ses Sistemi Aktif!`);
 
-    // --- SES KANALINA BAĞLANMA BÖLÜMÜ ---
-    // Diğer botla aynı odaya ya da başka bir odaya sokabilirsin kanka
-    const channelId = '1543153290823475211'; // Ses kanalı ID'n
-    const guildId = '1540484134361636884';   // Sunucu ID'n
+    const channelId = '1543153290823475211'; 
+    const guildId = '1540484134361636884';   
 
     const connectToVoice = () => {
         try {
@@ -40,8 +38,8 @@ client.on('ready', () => {
                 channelId: channelId,
                 guildId: guildId,
                 adapterCreator: client.guilds.cache.get(guildId).voiceAdapterCreator,
-                selfDeaf: true, // Kulaklığı kapatır
-                selfMute: true  // Mikrofonu kapatır
+                selfDeaf: true,
+                selfMute: true
             });
             console.log("Ekonomi botu ses kanalına başarıyla bağlandı.");
         } catch (error) {
@@ -49,14 +47,8 @@ client.on('ready', () => {
         }
     };
 
-    // İlk açılışta bağlan
     connectToVoice();
-
-    // Sesten düşerse her 15 dakikada bir kontrol edip tekrar sokar
-    setInterval(() => {
-        connectToVoice();
-    }, 15 * 60 * 1000);
-    // ------------------------------------
+    setInterval(() => { connectToVoice(); }, 15 * 60 * 1000);
 });
 
 client.on('messageCreate', async (message) => {
@@ -88,13 +80,13 @@ client.on('messageCreate', async (message) => {
         return message.reply(`🎁 Günlük ödülünü aldın! Hesabına **${odul} Kanada Coin** 🍁 eklendi. Toplam: **${bakiye.get(userId)} Kanada Coin**`);
     }
 
-    // --- !SLOT KOMUTU ---
+    // --- !SLOT KOMUTU (OwO Kasa Tasarımı) ---
     if (command === 'slot' || command === 's') {
-        const miktar = parseInt(args);
+        const miktar = parseInt(args[0]); // İlk argümanı sayıya çeviriyoruz
         const userBakiye = bakiye.get(userId) || 0;
 
         if (!miktar || isNaN(miktar) || miktar <= 0) {
-            return message.reply('⚠️ Slot oynamak için geçerli bir miktar girmeyi dene! Örn: `!slot 100`');
+            return message.reply('⚠️ Slot oynamak için geçerli bir miktar gir kanka! Örn: `!slot 100`');
         }
 
         if (userBakiye < miktar) {
@@ -107,25 +99,32 @@ client.on('messageCreate', async (message) => {
         const e2 = slotEmojileri[Math.floor(Math.random() * slotEmojileri.length)];
         const e3 = slotEmojileri[Math.floor(Math.random() * slotEmojileri.length)];
 
-        const slotMesaj = await message.reply(`🎰 **___ SLOTS ___**\n[ 🔄 | 🔄 | 🔄 ] **${message.author.username}** bet **${miktar}**...`);
+        const slotMesaj = await message.reply(`**___SLOTS___**\n║ 🔄 ║ 🔄 ║ 🔄 ║  **${message.author.username}** bet 🪙 **${miktar}**...\n║        ║        ║        ║`);
 
         setTimeout(() => {
-            if (e1 === e2 && e2 === e3) {
-                const kazanc = miktar * 4;
+            if (e1 === '🍒' && e2 === '🍒' && e3 === '🍒') {
+                const kazanc = Math.floor(miktar * 1.5);
                 bakiye.set(userId, bakiye.get(userId) + kazanc);
-                slotMesaj.edit(`🎰 **___ SLOTS ___**\n[ ${e1} | ${e2} | ${e3} ] **${message.author.username}** bet **${miktar}** and **WON ${kazanc} KANADA COIN!** 🍁🎉`);
-            } else if (e1 === e2 || e2 === e3 || e1 === e3) {
-                bakiye.set(userId, bakiye.get(userId) + miktar);
-                slotMesaj.edit(`🎰 **___ SLOTS ___**\n[ ${e1} | ${e2} | ${e3} ] **${message.author.username}** bet **${miktar}** (2'si tuttu, Kanada Coin'lerin iade edildi 🍁).`);
+                slotMesaj.edit(`**___SLOTS___**\n║ ${e1} ║ ${e2} ║ ${e3} ║  **${message.author.username}** bet 🪙 **${miktar}**\n║        ║        ║        ║  and **won ${kazanc} Kanada Coin!** 🍒🎉`);
+            
+            } else if (e1 === '🍆' && e2 === '🍆' && e3 === '🍆') {
+                bakiye.set(userId, miktar);
+                slotMesaj.edit(`**___SLOTS___**\n║ ${e1} ║ ${e2} ║ ${e3} ║  **${message.author.username}** bet 🪙 **${miktar}**\n║        ║        ║        ║  (3 Patlıcan geldi, paran iade edildi 🍆).`);
+            
+            } else if (e1 === e2 && e2 === e3) {
+                const kazanc = miktar * 2;
+                bakiye.set(userId, bakiye.get(userId) + kazanc);
+                slotMesaj.edit(`**___SLOTS___**\n║ ${e1} ║ ${e2} ║ ${e3} ║  **${message.author.username}** bet 🪙 **${miktar}**\n║        ║        ║        ║  and **won ${kazanc} Kanada Coin!** 🍁🎉`);
+            
             } else {
-                slotMesaj.edit(`🎰 **___ SLOTS ___**\n[ ${e1} | ${e2} | ${e3} ] **${message.author.username}** bet **${miktar}** and won nothing... :c`);
+                slotMesaj.edit(`**___SLOTS___**\n║ ${e1} ║ ${e2} ║ ${e3} ║  **${message.author.username}** bet 🪙 **${miktar}**\n║        ║        ║        ║  and won nothing... :c`);
             }
         }, 1500);
     }
 
     // --- !CF (COİNFLİP) KOMUTU ---
     if (command === 'cf' || command === 'coinflip') {
-        const miktar = parseInt(args);
+        const miktar = parseInt(args[0]);
         const userBakiye = bakiye.get(userId) || 0;
 
         if (!miktar || isNaN(miktar) || miktar <= 0) {
@@ -160,7 +159,8 @@ client.on('messageCreate', async (message) => {
         }
 
         const hedef = message.mentions.users.first();
-        const eklenecekMiktar = parseInt(args);
+        // İkinci kelimeyi (para miktarını) garantiye alıyoruz
+        const eklenecekMiktar = parseInt(args[1]); 
 
         if (!hedef || !eklenecekMiktar || isNaN(eklenecekMiktar)) {
             return message.reply('⚠️ Yanlış kullanım! Örn: `!paraekle @kullanıcı 50000`');
